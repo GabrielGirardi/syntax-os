@@ -1,0 +1,7 @@
+curl
+wget
+git
+vim
+htop
+unzip
+zip

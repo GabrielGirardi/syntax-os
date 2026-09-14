@@ -1,0 +1,42 @@
+# Build output
+build/
+dist/
+out/
+
+# ISO images
+*.iso
+*.img
+*.raw
+
+# Checksums
+*.sha256
+*.sha512
+
+# Temporary files
+tmp/
+temp/
+
+# Logs
+*.log
+
+# Virtual machines
+*.vdi
+*.vmdk
+*.qcow2
+*.ova
+
+# Linux packages
+*.deb
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.key
+*.pem
