@@ -5,50 +5,57 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 BUILD_DIR="$PROJECT_ROOT/build"
+ISO="$BUILD_DIR/ubuntu.iso"
+
+WORK_DIR="$BUILD_DIR/work"
+MOUNT_DIR="$BUILD_DIR/mnt"
 ROOTFS="$BUILD_DIR/rootfs"
 
-echo "================================="
-echo " Building SyntaxOS"
-echo "================================="
+echo "========================================"
+echo "        SyntaxOS ISO Builder"
+echo "========================================"
 
-echo "[1/5] Preparing directories..."
+if [ ! -f "$ISO" ]; then
+    echo "ERROR: Ubuntu ISO not found:"
+    echo "$ISO"
+    exit 1
+fi
 
-rm -rf "$BUILD_DIR"
+echo "[1/6] Preparing build directories..."
+
+rm -rf "$WORK_DIR"
+rm -rf "$MOUNT_DIR"
+rm -rf "$ROOTFS"
+
+mkdir -p "$WORK_DIR"
+mkdir -p "$MOUNT_DIR"
 mkdir -p "$ROOTFS"
 
-echo "[2/5] Creating root filesystem..."
+echo "[2/6] Mounting Ubuntu ISO..."
 
-sudo debootstrap \
-    --arch=amd64 \
-    noble \
-    "$ROOTFS" \
-    http://archive.ubuntu.com/ubuntu/
+sudo mount -o loop "$ISO" "$MOUNT_DIR"
 
-echo "[3/5] Copying package lists..."
+echo "[3/6] Copying ISO contents..."
 
-cp "$PROJECT_ROOT/config/packages/base.txt" "$ROOTFS/tmp/base.txt"
-cp "$PROJECT_ROOT/config/packages/development.txt" "$ROOTFS/tmp/development.txt"
+rsync -a \
+    --exclude=/casper/filesystem.squashfs \
+    "$MOUNT_DIR/" \
+    "$WORK_DIR/"
 
-echo "[4/5] Installing packages..."
+echo "[4/6] Extracting Ubuntu filesystem..."
 
-sudo chroot "$ROOTFS" /bin/bash <<'CHROOT'
+sudo unsquashfs \
+    -d "$ROOTFS" \
+    "$MOUNT_DIR/casper/filesystem.squashfs"
 
-export DEBIAN_FRONTEND=noninteractive
+echo "[5/6] Filesystem extracted."
 
-apt update
+echo "[6/6] Build environment ready."
 
-apt install -y \
-    $(grep -v '^#' /tmp/base.txt | grep -v '^$')
-
-apt install -y \
-    $(grep -v '^#' /tmp/development.txt | grep -v '^$')
-
-apt clean
-
-CHROOT
-
-echo "[5/5] Build filesystem ready."
+sudo umount "$MOUNT_DIR"
 
 echo
-echo "Root filesystem:"
+echo "========================================"
+echo "Filesystem ready:"
 echo "$ROOTFS"
+echo "========================================"
